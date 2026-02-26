@@ -1,0 +1,8 @@
+apiVersion: "v1"
+protocol: "iec104"
+address: ":2404"
+description: "IEC 60870-5-104 RTU"
+serverName: "PowerLogic RTU"
+serverVersion: "1.2.0"
+banner: "1"
+deadlineTimeoutSeconds: 120

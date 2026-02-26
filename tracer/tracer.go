@@ -51,10 +51,13 @@ const (
 	TCP
 	MCP
 	TELNET
+	MODBUS
+	S7COMM
+	IEC104
 )
 
 func (protocol Protocol) String() string {
-	return [...]string{"HTTP", "SSH", "TCP", "MCP", "TELNET"}[protocol]
+	return [...]string{"HTTP", "SSH", "TCP", "MCP", "TELNET", "MODBUS", "S7COMM", "IEC104"}[protocol]
 }
 
 const (
@@ -75,14 +78,17 @@ type Tracer interface {
 }
 
 type tracer struct {
-	strategy          Strategy
-	eventsChan        chan Event
-	eventsTotal       prometheus.Counter
-	eventsSSHTotal    prometheus.Counter
-	eventsTCPTotal    prometheus.Counter
-	eventsHTTPTotal   prometheus.Counter
-	eventsMCPTotal    prometheus.Counter
-	eventsTelnetTotal prometheus.Counter
+	strategy           Strategy
+	eventsChan         chan Event
+	eventsTotal        prometheus.Counter
+	eventsSSHTotal     prometheus.Counter
+	eventsTCPTotal     prometheus.Counter
+	eventsHTTPTotal    prometheus.Counter
+	eventsMCPTotal     prometheus.Counter
+	eventsTelnetTotal  prometheus.Counter
+	eventsModbusTotal  prometheus.Counter
+	eventsS7CommTotal  prometheus.Counter
+	eventsIEC104Total  prometheus.Counter
 
 	strategyMutex sync.RWMutex
 }
@@ -128,6 +134,21 @@ func GetInstance(defaultStrategy Strategy) *tracer {
 					Namespace: "beelzebub",
 					Name:      "telnet_events_total",
 					Help:      "The total number of TELNET events",
+				}),
+				eventsModbusTotal: promauto.NewCounter(prometheus.CounterOpts{
+					Namespace: "beelzebub",
+					Name:      "modbus_events_total",
+					Help:      "The total number of Modbus events",
+				}),
+				eventsS7CommTotal: promauto.NewCounter(prometheus.CounterOpts{
+					Namespace: "beelzebub",
+					Name:      "s7comm_events_total",
+					Help:      "The total number of S7Comm events",
+				}),
+				eventsIEC104Total: promauto.NewCounter(prometheus.CounterOpts{
+					Namespace: "beelzebub",
+					Name:      "iec104_events_total",
+					Help:      "The total number of IEC 104 events",
 				}),
 			}
 
@@ -177,6 +198,12 @@ func (tracer *tracer) updatePrometheusCounters(protocol string) {
 		tracer.eventsMCPTotal.Inc()
 	case TELNET.String():
 		tracer.eventsTelnetTotal.Inc()
+	case MODBUS.String():
+		tracer.eventsModbusTotal.Inc()
+	case S7COMM.String():
+		tracer.eventsS7CommTotal.Inc()
+	case IEC104.String():
+		tracer.eventsIEC104Total.Inc()
 	}
 	tracer.eventsTotal.Inc()
 }

@@ -1,0 +1,8 @@
+apiVersion: "v1"
+protocol: "modbus"
+address: ":502"
+description: "Siemens S7-1200 Modbus Server"
+serverName: "Siemens"
+serverVersion: "V4.4"
+banner: "1"
+deadlineTimeoutSeconds: 30

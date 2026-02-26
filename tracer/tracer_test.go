@@ -100,14 +100,17 @@ func TestUpdatePrometheusCounters(t *testing.T) {
 	mockStrategy := func(event Event) {}
 
 	tracer := &tracer{
-		strategy:          mockStrategy,
-		eventsChan:        make(chan Event, Workers),
-		eventsTotal:       mockCounter{},
-		eventsSSHTotal:    mockCounter{},
-		eventsTCPTotal:    mockCounter{},
-		eventsHTTPTotal:   mockCounter{},
-		eventsMCPTotal:    mockCounter{},
-		eventsTelnetTotal: mockCounter{},
+		strategy:           mockStrategy,
+		eventsChan:         make(chan Event, Workers),
+		eventsTotal:        mockCounter{},
+		eventsSSHTotal:     mockCounter{},
+		eventsTCPTotal:     mockCounter{},
+		eventsHTTPTotal:    mockCounter{},
+		eventsMCPTotal:     mockCounter{},
+		eventsTelnetTotal:  mockCounter{},
+		eventsModbusTotal:  mockCounter{},
+		eventsS7CommTotal:  mockCounter{},
+		eventsIEC104Total:  mockCounter{},
 	}
 
 	tracer.updatePrometheusCounters(SSH.String())
@@ -124,6 +127,21 @@ func TestUpdatePrometheusCounters(t *testing.T) {
 
 	tracer.updatePrometheusCounters(TELNET.String())
 	assert.Equal(t, 10, counter)
+
+	tracer.updatePrometheusCounters(MODBUS.String())
+	assert.Equal(t, 12, counter)
+
+	tracer.updatePrometheusCounters(S7COMM.String())
+	assert.Equal(t, 14, counter)
+
+	tracer.updatePrometheusCounters(IEC104.String())
+	assert.Equal(t, 16, counter)
+}
+
+func TestProtocolString(t *testing.T) {
+	assert.Equal(t, "MODBUS", MODBUS.String())
+	assert.Equal(t, "S7COMM", S7COMM.String())
+	assert.Equal(t, "IEC104", IEC104.String())
 }
 
 func TestGetStrategy(t *testing.T) {

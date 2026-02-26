@@ -124,8 +124,8 @@ func handleModbusConnection(conn net.Conn, servConf parser.BeelzebubServiceConfi
 		// Build response PDU
 		responsePDU := buildResponse(fc, startAddr, quantity, unitID, slaveID, servConf, overrides)
 
-		// Build response MBAP
-		resp := make([]byte, 6+len(responsePDU))
+		// Build response MBAP (6 bytes) + unitID (1 byte) + PDU
+		resp := make([]byte, 7+len(responsePDU))
 		binary.BigEndian.PutUint16(resp[0:2], txID)
 		binary.BigEndian.PutUint16(resp[2:4], 0x0000) // protocol ID
 		binary.BigEndian.PutUint16(resp[4:6], uint16(1+len(responsePDU)))

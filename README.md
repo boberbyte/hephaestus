@@ -28,6 +28,10 @@ Beelzebub is an advanced honeypot framework designed to provide a highly secure 
   - [SSH Honeypot](#ssh-honeypot)
   - [TELNET Honeypot](#telnet-honeypot)
   - [TCP Honeypot](#tcp-honeypot)
+  - [OT/ICS Honeypots](#otics-honeypots)
+    - [Modbus TCP](#modbus-tcp)
+    - [Siemens S7Comm](#siemens-s7comm)
+    - [IEC 60870-5-104](#iec-60870-5-104)
 - [Observability](#observability)
   - [Prometheus Metrics](#prometheus-metrics)
   - [RabbitMQ Integration](#rabbitmq-integration)
@@ -51,7 +55,7 @@ Beelzebub offers a wide range of features to enhance your honeypot environment:
 
 - **Low-code configuration**: YAML-based, modular service definition
 - **LLM integration**: The LLM convincingly simulates a real system, creating high-interaction honeypot experiences, while actually maintaining low-interaction architecture for enhanced security and easy management
-- **Multi-protocol support**: SSH, HTTP, TCP, TELNET, MCP (detect prompt injection against LLM agents)
+- **Multi-protocol support**: SSH, HTTP, TCP, TELNET, MCP (detect prompt injection against LLM agents), and OT/ICS protocols: Modbus TCP, Siemens S7Comm, IEC 60870-5-104
 - **Prometheus metrics & observability**: Built-in metrics endpoint for monitoring
 - **Event tracing**: Multiple output strategies (stdout, RabbitMQ, Beelzebub Cloud)
 - **Docker & Kubernetes ready**: Deploy anywhere with provided configurations
@@ -459,6 +463,110 @@ banner: "8.0.29"
 deadlineTimeoutSeconds: 10
 ```
 
+### OT/ICS Honeypots
+
+Beelzebub supports three industrial control system protocols, giving protocol-accurate responses to scanners such as Shodan, nmap ICS scripts, plcscan, and ICS-specific attack tools. All implementations use only Go standard library — no extra dependencies required.
+
+| Protocol | Default port | Standard |
+|---|---|---|
+| Modbus TCP | 502 | IEC 61158 |
+| Siemens S7Comm | 102 | Siemens proprietary (TPKT/COTP/S7) |
+| IEC 60870-5-104 | 2404 | IEC 60870-5-104 |
+
+#### Modbus TCP
+
+Implements the full MBAP header and routes the most common function codes:
+
+| Function code | Name | Behaviour |
+|---|---|---|
+| `0x01` / `0x02` | Read Coils / Discrete Inputs | Returns `⌈qty/8⌉` zero bytes |
+| `0x03` / `0x04` | Read Holding / Input Registers | Returns `qty×2` zero bytes (overridable) |
+| `0x05` / `0x06` / `0x0F` / `0x10` | Write | Echoes acknowledgment |
+| `0x11` | Report Slave ID | Returns `serverName` + run indicator |
+| `0x2B` | MEI Device Identification | Returns vendor/product from `serverName`/`serverVersion` |
+| Unknown | — | Exception response (FC\|0x80, code 0x01) |
+
+Use `commands` to override register values for specific address ranges:
+
+```yaml
+apiVersion: "v1"
+protocol: "modbus"
+address: ":502"
+description: "Siemens S7-1200 Modbus Server"
+serverName: "Siemens"
+serverVersion: "V4.4"
+banner: "1"                    # Slave ID
+deadlineTimeoutSeconds: 30
+commands:
+  - regex: "FC03:0-4"          # Override holding registers 0-4
+    handler: "0064 00C8 012C 01F4 0258"   # Values in hex (100, 200, 300, 400, 600)
+```
+
+Verify with nmap or mbpoll:
+
+```bash
+nmap -p 502 --script modbus-discover localhost
+echo -ne "\x00\x01\x00\x00\x00\x06\x01\x03\x00\x00\x00\x0A" | nc localhost 502 | xxd
+```
+
+#### Siemens S7Comm
+
+Implements the full TPKT → COTP → S7 protocol stack used by Siemens S7-300/400/1200/1500 PLCs:
+
+1. **COTP handshake** — responds to Connection Request (CR `0xE0`) with Connection Confirm (CC `0xD0`)
+2. **S7 negotiate** — acknowledges Setup Communication with max PDU size 960 bytes
+3. **SZL reads** — serves module identification, CPU component, and module info from YAML config fields:
+
+| SZL ID | Content | Config field |
+|---|---|---|
+| `0x001C` | Module identification | `serverName` |
+| `0x0011` | CPU component / firmware | `serverVersion` |
+| `0x0111` | Module info / serial | `banner` |
+
+```yaml
+apiVersion: "v1"
+protocol: "s7comm"
+address: ":102"
+description: "Siemens S7-300 PLC"
+serverName: "6ES7 315-2EH14-0AB0"   # Shown as module identification
+serverVersion: "V3.3.13"             # Shown as firmware version
+banner: "S7300-01"                   # Shown as serial number
+deadlineTimeoutSeconds: 60
+```
+
+Verify with nmap:
+
+```bash
+nmap -p 102 --script s7-info localhost
+```
+
+#### IEC 60870-5-104
+
+Implements the IEC 104 application layer with a full frame state machine:
+
+- **U-frames**: handles STARTDT, STOPDT, and TESTFR with correct confirmations
+- **I-frames**: parses ASDU (TypeID, Cause of Transmission, Common Address, IOA) and sends S-frame acknowledgments; command TypeIDs (45–64) receive activation confirmation (COT=7) followed by activation termination (COT=10)
+- **S-frames**: acknowledgment-only frames are handled silently
+- **Keepalive**: sends TESTFR_act every 30 seconds while the data transfer is active
+
+```yaml
+apiVersion: "v1"
+protocol: "iec104"
+address: ":2404"
+description: "IEC 60870-5-104 RTU"
+serverName: "PowerLogic RTU"
+serverVersion: "1.2.0"
+banner: "1"                    # ASDU common address
+deadlineTimeoutSeconds: 120
+```
+
+Verify with netcat:
+
+```bash
+# Send STARTDT_act — expect STARTDT_con (0x0B) in response
+echo -ne "\x68\x04\x07\x00\x00\x00" | nc localhost 2404 | xxd
+```
+
 ## Observability
 
 ### Prometheus Metrics
@@ -471,6 +579,9 @@ Beelzebub exposes Prometheus metrics at the configured endpoint (default: `:2112
 - `beelzebub_events_tcp_total` - TCP-specific events
 - `beelzebub_events_telnet_total` - TELNET-specific events
 - `beelzebub_events_mcp_total` - MCP-specific events
+- `beelzebub_modbus_events_total` - Modbus TCP events
+- `beelzebub_s7comm_events_total` - Siemens S7Comm events
+- `beelzebub_iec104_events_total` - IEC 60870-5-104 events
 
 ### RabbitMQ Integration
 

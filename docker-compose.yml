@@ -11,6 +11,9 @@ services:
       - "8081:8081"
       - "80:80"
       - "3306:3306"
+      - "502:502"   # Modbus TCP
+      - "102:102"   # Siemens S7Comm
+      - "2404:2404" # IEC 60870-5-104
       - "2112:2112" #Prometheus Open Metrics
     environment:
       RABBITMQ_URI: ${RABBITMQ_URI}

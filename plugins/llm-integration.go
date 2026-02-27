@@ -155,8 +155,8 @@ func InitLLMHoneypot(config LLMHoneypot) *LLMHoneypot {
 	// Inject the dependencies
 	config.client = resty.New()
 
-	if os.Getenv("OPEN_AI_SECRET_KEY") != "" {
-		config.OpenAIKey = os.Getenv("OPEN_AI_SECRET_KEY")
+	if os.Getenv("LLM_API_KEY") != "" {
+		config.OpenAIKey = os.Getenv("LLM_API_KEY")
 	}
 
 	return &config

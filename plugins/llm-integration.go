@@ -82,8 +82,14 @@ type anthropicContent struct {
 	Text string `json:"text"`
 }
 
+type anthropicError struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
 type anthropicResponse struct {
 	Content []anthropicContent `json:"content"`
+	Error   *anthropicError    `json:"error,omitempty"`
 }
 
 type Message struct {
@@ -385,8 +391,11 @@ func (llmHoneypot *LLMHoneypot) anthropicCaller(messages []Message) (string, err
 	log.Debug(response)
 
 	result := response.Result().(*anthropicResponse)
+	if result.Error != nil {
+		return "", fmt.Errorf("anthropic API error (%s): %s", result.Error.Type, result.Error.Message)
+	}
 	if len(result.Content) == 0 {
-		return "", errors.New("no content in anthropic response")
+		return "", fmt.Errorf("no content in anthropic response (HTTP %d)", response.StatusCode())
 	}
 
 	return removeQuotes(result.Content[0].Text), nil

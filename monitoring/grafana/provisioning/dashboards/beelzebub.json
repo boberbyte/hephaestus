@@ -1,0 +1,83 @@
+{
+  "title": "Beelzebub Honeypot",
+  "uid": "beelzebub-main",
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Events",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "beelzebub_events_total", "legendFormat": "Total" }],
+      "options": { "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green" }, { "value": 100, "color": "orange" }, { "value": 1000, "color": "red" }] } } }
+    },
+    {
+      "id": 2,
+      "title": "Events per Protocol",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 20, "h": 4 },
+      "datasource": "Prometheus",
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [
+        { "expr": "beelzebub_ssh_events_total",    "legendFormat": "SSH" },
+        { "expr": "beelzebub_http_events_total",   "legendFormat": "HTTP" },
+        { "expr": "beelzebub_tcp_events_total",    "legendFormat": "TCP" },
+        { "expr": "beelzebub_telnet_events_total", "legendFormat": "TELNET" },
+        { "expr": "beelzebub_mcp_events_total",    "legendFormat": "MCP" },
+        { "expr": "beelzebub_modbus_events_total", "legendFormat": "Modbus" },
+        { "expr": "beelzebub_s7comm_events_total", "legendFormat": "S7Comm" },
+        { "expr": "beelzebub_iec104_events_total", "legendFormat": "IEC 104" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Events over time",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(beelzebub_ssh_events_total[1m])",    "legendFormat": "SSH" },
+        { "expr": "rate(beelzebub_http_events_total[1m])",   "legendFormat": "HTTP" },
+        { "expr": "rate(beelzebub_tcp_events_total[1m])",    "legendFormat": "TCP" },
+        { "expr": "rate(beelzebub_telnet_events_total[1m])", "legendFormat": "TELNET" },
+        { "expr": "rate(beelzebub_mcp_events_total[1m])",    "legendFormat": "MCP" },
+        { "expr": "rate(beelzebub_modbus_events_total[1m])", "legendFormat": "Modbus" },
+        { "expr": "rate(beelzebub_s7comm_events_total[1m])", "legendFormat": "S7Comm" },
+        { "expr": "rate(beelzebub_iec104_events_total[1m])", "legendFormat": "IEC 104" }
+      ],
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 4,
+      "title": "Live Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 12 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"beelzebub\"}", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 5,
+      "title": "OT Protocol Logs (Modbus / S7Comm / IEC 104)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"beelzebub\", protocol=~\"MODBUS|S7COMM|IEC104\"}", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 6,
+      "title": "Source IPs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"beelzebub\"} | json | sourceIp != \"\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "signature", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending" }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" }
+}

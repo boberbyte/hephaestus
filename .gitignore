@@ -1,4 +1,5 @@
 .env
+samples/
 .DS_Store
 .idea
 logs

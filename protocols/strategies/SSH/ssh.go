@@ -1,9 +1,14 @@
 package SSH
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +22,82 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/term"
 )
+
+const samplesDir = "/samples"
+
+// handleSCPUpload implements the SCP sink protocol to capture files uploaded by attackers.
+func handleSCPUpload(sess ssh.Session, sourceIp, user string, tr tracer.Tracer, servConf parser.BeelzebubServiceConfiguration) {
+	if err := os.MkdirAll(samplesDir, 0750); err != nil {
+		log.Errorf("SCP: failed to create samples dir: %s", err)
+		sess.Write([]byte{0x02})
+		return
+	}
+
+	sess.Write([]byte{0x00}) // ready
+
+	reader := bufio.NewReader(sess)
+	for {
+		header, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		header = strings.TrimRight(header, "\n\r")
+		if len(header) == 0 {
+			break
+		}
+
+		switch header[0] {
+		case 'E': // end of directory
+			sess.Write([]byte{0x00})
+			return
+		case 'C': // file copy: C<mode> <size> <filename>
+			parts := strings.SplitN(header[1:], " ", 3)
+			if len(parts) != 3 {
+				return
+			}
+			size, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil || size < 0 || size > 100*1024*1024 { // cap at 100 MB
+				return
+			}
+			filename := filepath.Base(parts[2])
+
+			sess.Write([]byte{0x00}) // ready for data
+
+			data := make([]byte, size)
+			if _, err := io.ReadFull(reader, data); err != nil {
+				break
+			}
+			reader.ReadByte() // trailing \x00 from client
+
+			timestamp := time.Now().UTC().Format("20060102T150405Z")
+			savePath := filepath.Join(samplesDir, fmt.Sprintf("%s_%s_%s", timestamp, sourceIp, filename))
+			if err := os.WriteFile(savePath, data, 0600); err != nil {
+				log.Errorf("SCP: failed to save sample %s: %s", savePath, err)
+			} else {
+				log.WithFields(log.Fields{
+					"filename": filename,
+					"size":     size,
+					"sourceIp": sourceIp,
+					"path":     savePath,
+				}).Warn("SCP sample captured")
+			}
+
+			sess.Write([]byte{0x00}) // ack
+
+			tr.TraceEvent(tracer.Event{
+				Msg:         "SCP Upload — Sample Captured",
+				Protocol:    tracer.SSH.String(),
+				Status:      tracer.Stateless.String(),
+				SourceIp:    sourceIp,
+				User:        user,
+				Command:     fmt.Sprintf("scp %s (%d bytes)", filename, size),
+				Description: servConf.Description,
+			})
+		default:
+			return
+		}
+	}
+}
 
 type SSHStrategy struct {
 	Sessions *historystore.HistoryStore
@@ -41,6 +122,12 @@ func (sshStrategy *SSHStrategy) Init(servConf parser.BeelzebubServiceConfigurati
 
 				// Inline SSH command
 				if sess.RawCommand() != "" {
+					// Intercept SCP uploads before LLM handling
+					if strings.Contains(sess.RawCommand(), "scp") && strings.Contains(sess.RawCommand(), "-t") {
+						handleSCPUpload(sess, host, sess.User(), tr, servConf)
+						return
+					}
+
 					var histories []plugins.Message
 					if sshStrategy.Sessions.HasKey(sessionKey) {
 						histories = sshStrategy.Sessions.Query(sessionKey)

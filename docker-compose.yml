@@ -19,6 +19,7 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
     volumes:
       - "./configurations:/configurations"
+      - "./samples:/samples"
     logging:
       driver: json-file
       options:

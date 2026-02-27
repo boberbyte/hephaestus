@@ -1,17 +1,26 @@
-# Beelzebub
+# Hephaestus
 
-[![CI](https://github.com/mariocandela/beelzebub/actions/workflows/ci.yml/badge.svg)](https://github.com/mariocandela/beelzebub/actions/workflows/ci.yml) [![Docker](https://github.com/mariocandela/beelzebub/actions/workflows/docker-image.yml/badge.svg)](https://github.com/mariocandela/beelzebub/actions/workflows/docker-image.yml) [![codeql](https://github.com/mariocandela/beelzebub/actions/workflows/codeql.yml/badge.svg)](https://github.com/mariocandela/beelzebub/actions/workflows/codeql.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mariocandela/beelzebub/v3)](https://goreportcard.com/report/github.com/mariocandela/beelzebub/v3)
-[![codecov](https://codecov.io/gh/mariocandela/beelzebub/graph/badge.svg?token=8XTK7D4WHE)](https://codecov.io/gh/mariocandela/beelzebub)
-[![Go Reference](https://pkg.go.dev/badge/github.com/mariocandela/beelzebub/v3.svg)](https://pkg.go.dev/github.com/mariocandela/beelzebub/v3)
-[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/mariocandela/beelzebub)](https://archestra.ai/mcp-catalog/mariocandela__beelzebub)
-[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
+> ⚠️ **Work in Progress** — This is an OT/ICS-focused fork of [beelzebub](https://github.com/mariocandela/beelzebub) and is under active development. Expect breaking changes.
+
+**Hephaestus** is an OT/ICS honeypot framework built on top of [beelzebub](https://github.com/mariocandela/beelzebub). It extends the original IT honeypot capabilities with industrial protocol support, AI-generated process values, and a full monitoring stack tailored for operational technology environments.
+
+## What's different from beelzebub?
+
+| Feature | beelzebub | Hephaestus |
+|---------|-----------|------------|
+| SSH / HTTP / TCP / Telnet | ✅ | ✅ |
+| Modbus TCP (port 502) | ❌ | ✅ |
+| Siemens S7Comm (port 102) | ❌ | ✅ |
+| IEC 60870-5-104 (port 2404) | ❌ | ✅ |
+| AI-generated register values | ❌ | ✅ |
+| OT Historian (InfluxDB) | ❌ | ✅ |
+| Grafana + Loki + Prometheus | ❌ | ✅ |
+| GeoIP world map | ❌ | ✅ |
+| LLM provider: Anthropic Claude | ❌ | ✅ |
 
 ## Overview
 
-Beelzebub is an advanced honeypot framework designed to provide a highly secure environment for detecting and analyzing cyber attacks. It offers a low code approach for easy implementation and uses AI to mimic the behavior of a high-interaction honeypot.
-
-![github beelzebub - inception program](https://github.com/user-attachments/assets/e180d602-6de9-4c48-92ad-eb0ef3c5322d)
+Hephaestus simulates an OT/ICS environment — PLCs, RTUs, and historians — to attract and analyze attacks against industrial infrastructure. OT protocol honeypots use Claude (Anthropic) to generate realistic process values (temperature, pressure, flow) so that sophisticated scanners cannot easily distinguish the honeypot from a real installation.
 
 ## Table of Contents
 

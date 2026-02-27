@@ -1,7 +1,7 @@
 apiVersion: "v1"
 protocol: "modbus"
 address: ":502"
-description: "water treatment plant"
+description: "water treatment pump station. Register map with realistic ranges: 0=flow L/min*10 (800-1500), 1=inlet pressure mbar (800-1200), 2=outlet pressure mbar (3000-5000), 3=water temperature 0.1C (80-250 meaning 8-25C), 4=pump speed RPM (1400-1500), 5=pump current 0.1A (150-250 meaning 15-25A), 6=chlorine level ug/L (200-800), 7=pH value 0.01 (680-730 meaning 6.8-7.3), 8=turbidity NTU*10 (5-50), 9=tank level mm (2000-4000)"
 serverName: "Siemens S7-1200"
 serverVersion: "V4.4"
 banner: "1"

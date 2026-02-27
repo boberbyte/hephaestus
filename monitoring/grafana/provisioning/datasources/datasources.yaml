@@ -12,6 +12,6 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://beelzebub:2112
+    url: http://prometheus:9090
     jsonData:
       timeInterval: "15s"

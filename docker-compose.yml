@@ -25,6 +25,18 @@ services:
       options:
         tag: "beelzebub"
 
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - beelzebub
+
   loki:
     image: grafana/loki:3.4.2
     container_name: loki
@@ -47,6 +59,26 @@ services:
     depends_on:
       - loki
 
+  geoip-init:
+    image: curlimages/curl:8.12.1
+    container_name: geoip-init
+    restart: "no"
+    user: root
+    volumes:
+      - geoip-data:/geoip
+    command: >
+      sh -c "
+        FILE=/geoip/dbip-country-lite.mmdb;
+        if [ ! -f $$FILE ]; then
+          echo 'Downloading DB-IP GeoLite database...';
+          YEAR=$$(date +%Y);
+          MONTH=$$(date +%m);
+          curl -fsSL https://download.db-ip.com/free/dbip-country-lite-$${YEAR}-$${MONTH}.mmdb.gz | gunzip > $$FILE && echo 'GeoIP database ready.' || echo 'Download failed, maps will be empty.';
+        else
+          echo 'GeoIP database already present.';
+        fi
+      "
+
   grafana:
     image: grafana/grafana:11.5.2
     container_name: grafana
@@ -56,12 +88,18 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=beelzebub
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - geoip-data:/var/lib/grafana/geoip:ro
     depends_on:
       - loki
+      - geoip-init
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
+  geoip-data:

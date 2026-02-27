@@ -52,32 +52,123 @@
       "options": { "tooltip": { "mode": "multi" } }
     },
     {
-      "id": 4,
-      "title": "Live Logs",
+      "id": 7,
+      "title": "Login Attempts (SSH / TELNET)",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 12 },
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
       "datasource": "Loki",
-      "targets": [{ "expr": "{container=\"beelzebub\"}", "legendFormat": "" }],
-      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+      "targets": [{
+        "expr": "{container=\"/beelzebub\"} | json | user != `` or password != ``",
+        "legendFormat": ""
+      }],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    },
+    {
+      "id": 8,
+      "title": "Commands Executed",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{
+        "expr": "{container=\"/beelzebub\"} | json | command != ``",
+        "legendFormat": ""
+      }],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    },
+    {
+      "id": 10,
+      "title": "Attackers World Map",
+      "type": "geomap",
+      "gridPos": { "x": 0, "y": 32, "w": 24, "h": 12 },
+      "datasource": "Loki",
+      "targets": [{
+        "expr": "{container=\"/beelzebub\"} | json | sourceIp != ``",
+        "legendFormat": ""
+      }],
+      "options": {
+        "view": { "id": "zero", "zoom": 2 },
+        "controls": { "showZoom": true, "showAttribution": true },
+        "layers": [{
+          "type": "markers",
+          "name": "Attackers",
+          "config": {
+            "style": {
+              "color": { "fixed": "red" },
+              "opacity": 0.7,
+              "size": { "fixed": 5 }
+            }
+          },
+          "location": { "mode": "lookup", "lookup": "sourceIp", "gazetteer": "public/gazetteer/countries.json" }
+        }]
+      },
+      "transformations": [
+        { "id": "extractFields", "options": { "source": "labels" } }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Source IPs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 44, "w": 12, "h": 8 },
+      "datasource": "Loki",
+      "targets": [{
+        "expr": "{container=\"/beelzebub\"} | json | sourceIp != ``",
+        "legendFormat": ""
+      }],
+      "options": {
+        "dedupStrategy": "signature",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showTime": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Live Logs (alla protokoll)",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"}", "legendFormat": "" }],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
     },
     {
       "id": 5,
-      "title": "OT Protocol Logs (Modbus / S7Comm / IEC 104)",
+      "title": "OT Protocol Events (Modbus / S7Comm / IEC 104)",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 10 },
       "datasource": "Loki",
-      "targets": [{ "expr": "{container=\"beelzebub\", protocol=~\"MODBUS|S7COMM|IEC104\"}", "legendFormat": "" }],
-      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
-    },
-    {
-      "id": 6,
-      "title": "Source IPs",
-      "type": "logs",
-      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
-      "datasource": "Loki",
-      "targets": [{ "expr": "{container=\"beelzebub\"} | json | sourceIp != \"\"", "legendFormat": "" }],
-      "options": { "dedupStrategy": "signature", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending" }
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |~ `MODBUS|S7COMM|IEC104`", "legendFormat": "" }],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
     }
   ],
-  "time": { "from": "now-1h", "to": "now" }
+  "time": { "from": "now-6h", "to": "now" }
 }

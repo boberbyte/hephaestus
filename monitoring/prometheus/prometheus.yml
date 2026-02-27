@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: beelzebub
+    static_configs:
+      - targets: ['beelzebub:2112']

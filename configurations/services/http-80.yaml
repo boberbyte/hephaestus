@@ -22,6 +22,5 @@ commands:
     plugin: "LLMHoneypot"
     statusCode: 200
 plugin:
-  llmProvider: "openai"
-  llmModel: "gpt-4o"
-  openAISecretKey: "sk-proj-123456"
+  llmProvider: "anthropic"
+  llmModel: "claude-haiku-4-5-20251001"

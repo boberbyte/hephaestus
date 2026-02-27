@@ -20,6 +20,8 @@ services:
       OPEN_AI_SECRET_KEY: ${OPEN_AI_SECRET_KEY}
     volumes:
       - "./configurations:/configurations"
+    depends_on:
+      - ollama
     logging:
       driver: json-file
       options:
@@ -58,6 +60,55 @@ services:
     command: -config.file=/etc/promtail/config.yaml
     depends_on:
       - loki
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    restart: always
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=beelzebub
+      - DOCKER_INFLUXDB_INIT_ORG=ot-plant
+      - DOCKER_INFLUXDB_INIT_BUCKET=process-data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=beelzebub-historian-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  telegraf:
+    image: telegraf:1.33
+    container_name: telegraf
+    restart: always
+    volumes:
+      - ./monitoring/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - beelzebub
+      - influxdb
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+  ollama-init:
+    image: curlimages/curl:8.12.1
+    container_name: ollama-init
+    restart: "no"
+    depends_on:
+      - ollama
+    command: >
+      sh -c "
+        sleep 5;
+        echo 'Pulling llama3.2:1b model...';
+        curl -s -X POST http://ollama:11434/api/pull -d '{\"name\":\"llama3.2:1b\"}' | tail -1;
+        echo 'Model ready.'
+      "
 
   geoip-init:
     image: curlimages/curl:8.12.1
@@ -103,3 +154,5 @@ volumes:
   grafana-data:
   prometheus-data:
   geoip-data:
+  influxdb-data:
+  ollama-data:

@@ -154,6 +154,18 @@
       }
     },
     {
+      "id": 11,
+      "title": "OT Historian — Events Rate (InfluxDB)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 50, "w": 24, "h": 8 },
+      "datasource": "InfluxDB-Historian",
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"process-data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] =~ /beelzebub/)\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\")\n  |> derivative(unit: 1m, nonNegative: true)\n  |> yield(name: \"rate\")"
+      }],
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
       "id": 5,
       "title": "OT Protocol Events (Modbus / S7Comm / IEC 104)",
       "type": "logs",

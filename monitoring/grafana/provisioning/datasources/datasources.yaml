@@ -15,3 +15,15 @@ datasources:
     url: http://prometheus:9090
     jsonData:
       timeInterval: "15s"
+
+  - name: InfluxDB-Historian
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: ot-plant
+      defaultBucket: process-data
+      tlsSkipVerify: true
+    secureJsonData:
+      token: beelzebub-historian-token

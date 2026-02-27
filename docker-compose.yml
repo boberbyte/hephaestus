@@ -20,8 +20,6 @@ services:
       OPEN_AI_SECRET_KEY: ${OPEN_AI_SECRET_KEY}
     volumes:
       - "./configurations:/configurations"
-    depends_on:
-      - ollama
     logging:
       driver: json-file
       options:
@@ -87,29 +85,6 @@ services:
       - beelzebub
       - influxdb
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: always
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-
-  ollama-init:
-    image: curlimages/curl:8.12.1
-    container_name: ollama-init
-    restart: "no"
-    depends_on:
-      - ollama
-    command: >
-      sh -c "
-        sleep 5;
-        echo 'Pulling llama3.2:1b model...';
-        curl -s -X POST http://ollama:11434/api/pull -d '{\"name\":\"llama3.2:1b\"}' | tail -1;
-        echo 'Model ready.'
-      "
-
   geoip-init:
     image: curlimages/curl:8.12.1
     container_name: geoip-init
@@ -155,4 +130,3 @@ volumes:
   prometheus-data:
   geoip-data:
   influxdb-data:
-  ollama-data:

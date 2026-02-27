@@ -10,8 +10,8 @@ serverName: "ubuntu"
 passwordRegex: "^(root|qwerty|Smoker666|123456|jenkins|minecraft|sinus|alex|postgres|Ly123456|1234)$"
 deadlineTimeoutSeconds: 6000
 plugin:
-  # To use OpenAI: set OPEN_AI_SECRET_KEY in your .env file (see .env.example)
-  # and change llmProvider to "openai" and llmModel to e.g. "gpt-4o"
-  llmProvider: "ollama"
-  llmModel: "llama3.2:1b"
-  host: "http://ollama:11434/api/chat"
+  # OpenRouter ger åtkomst till Claude och andra LLM:er via OpenAI-kompatibelt API
+  # Sätt OPEN_AI_SECRET_KEY=sk-or-... i din .env fil
+  llmProvider: "openai"
+  llmModel: "anthropic/claude-3-5-haiku"
+  host: "https://openrouter.ai/api/v1/chat/completions"

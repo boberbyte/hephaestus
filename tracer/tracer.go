@@ -49,7 +49,6 @@ const (
 	HTTP Protocol = iota
 	SSH
 	TCP
-	MCP
 	TELNET
 	MODBUS
 	S7COMM
@@ -57,7 +56,7 @@ const (
 )
 
 func (protocol Protocol) String() string {
-	return [...]string{"HTTP", "SSH", "TCP", "MCP", "TELNET", "MODBUS", "S7COMM", "IEC104"}[protocol]
+	return [...]string{"HTTP", "SSH", "TCP", "TELNET", "MODBUS", "S7COMM", "IEC104"}[protocol]
 }
 
 const (
@@ -84,7 +83,6 @@ type tracer struct {
 	eventsSSHTotal     prometheus.Counter
 	eventsTCPTotal     prometheus.Counter
 	eventsHTTPTotal    prometheus.Counter
-	eventsMCPTotal     prometheus.Counter
 	eventsTelnetTotal  prometheus.Counter
 	eventsModbusTotal  prometheus.Counter
 	eventsS7CommTotal  prometheus.Counter
@@ -124,11 +122,6 @@ func GetInstance(defaultStrategy Strategy) *tracer {
 					Namespace: "beelzebub",
 					Name:      "http_events_total",
 					Help:      "The total number of HTTP events",
-				}),
-				eventsMCPTotal: promauto.NewCounter(prometheus.CounterOpts{
-					Namespace: "beelzebub",
-					Name:      "mcp_events_total",
-					Help:      "The total number of MCP events",
 				}),
 				eventsTelnetTotal: promauto.NewCounter(prometheus.CounterOpts{
 					Namespace: "beelzebub",
@@ -194,8 +187,6 @@ func (tracer *tracer) updatePrometheusCounters(protocol string) {
 		tracer.eventsSSHTotal.Inc()
 	case TCP.String():
 		tracer.eventsTCPTotal.Inc()
-	case MCP.String():
-		tracer.eventsMCPTotal.Inc()
 	case TELNET.String():
 		tracer.eventsTelnetTotal.Inc()
 	case MODBUS.String():

@@ -106,7 +106,6 @@ func TestUpdatePrometheusCounters(t *testing.T) {
 		eventsSSHTotal:     mockCounter{},
 		eventsTCPTotal:     mockCounter{},
 		eventsHTTPTotal:    mockCounter{},
-		eventsMCPTotal:     mockCounter{},
 		eventsTelnetTotal:  mockCounter{},
 		eventsModbusTotal:  mockCounter{},
 		eventsS7CommTotal:  mockCounter{},
@@ -122,20 +121,17 @@ func TestUpdatePrometheusCounters(t *testing.T) {
 	tracer.updatePrometheusCounters(TCP.String())
 	assert.Equal(t, 6, counter)
 
-	tracer.updatePrometheusCounters(MCP.String())
+	tracer.updatePrometheusCounters(TELNET.String())
 	assert.Equal(t, 8, counter)
 
-	tracer.updatePrometheusCounters(TELNET.String())
+	tracer.updatePrometheusCounters(MODBUS.String())
 	assert.Equal(t, 10, counter)
 
-	tracer.updatePrometheusCounters(MODBUS.String())
+	tracer.updatePrometheusCounters(S7COMM.String())
 	assert.Equal(t, 12, counter)
 
-	tracer.updatePrometheusCounters(S7COMM.String())
-	assert.Equal(t, 14, counter)
-
 	tracer.updatePrometheusCounters(IEC104.String())
-	assert.Equal(t, 16, counter)
+	assert.Equal(t, 14, counter)
 }
 
 func TestProtocolString(t *testing.T) {

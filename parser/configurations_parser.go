@@ -70,7 +70,6 @@ type BeelzebubServiceConfiguration struct {
 	Protocol               string    `yaml:"protocol"`
 	Address                string    `yaml:"address"`
 	Commands               []Command `yaml:"commands"`
-	Tools                  []Tool    `yaml:"tools"`
 	FallbackCommand        Command   `yaml:"fallbackCommand"`
 	ServerVersion          string    `yaml:"serverVersion"`
 	ServerName             string    `yaml:"serverName"`
@@ -101,30 +100,6 @@ type Command struct {
 	StatusCode int            `yaml:"statusCode"`
 	Plugin     string         `yaml:"plugin"`
 	Name       string         `yaml:"name"`
-}
-
-// Tool is the struct that contains the configurations of the MCP Honeypot
-type Tool struct {
-	Name            string           `yaml:"name" json:"Name"`
-	Description     string           `yaml:"description" json:"Description"`
-	Params          []Param          `yaml:"params" json:"Params"`
-	Handler         string           `yaml:"handler" json:"Handler"`
-	Annotations     *ToolAnnotations `yaml:"annotations,omitempty" json:"Annotations,omitempty"`
-}
-
-// ToolAnnotations contains MCP tool annotation hints for LLM clients
-type ToolAnnotations struct {
-	Title           string `yaml:"title,omitempty" json:"Title,omitempty"`
-	ReadOnlyHint    *bool  `yaml:"readOnlyHint,omitempty" json:"ReadOnlyHint,omitempty"`
-	DestructiveHint *bool  `yaml:"destructiveHint,omitempty" json:"DestructiveHint,omitempty"`
-	IdempotentHint  *bool  `yaml:"idempotentHint,omitempty" json:"IdempotentHint,omitempty"`
-	OpenWorldHint   *bool  `yaml:"openWorldHint,omitempty" json:"OpenWorldHint,omitempty"`
-}
-
-// Param is the struct that contains the configurations of the parameters of the tools
-type Param struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
 }
 
 type configurationsParser struct {

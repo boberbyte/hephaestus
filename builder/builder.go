@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/mariocandela/beelzebub/v3/protocols/strategies/IEC104"
-	"github.com/mariocandela/beelzebub/v3/protocols/strategies/MCP"
 	"github.com/mariocandela/beelzebub/v3/protocols/strategies/MODBUS"
 	"github.com/mariocandela/beelzebub/v3/protocols/strategies/S7COMM"
 	"github.com/mariocandela/beelzebub/v3/protocols/strategies/TELNET"
@@ -126,7 +125,6 @@ Honeypot Framework, happy hacking!`)
 	secureShellStrategy := &SSH.SSHStrategy{}
 	hypertextTransferProtocolStrategy := &HTTP.HTTPStrategy{}
 	transmissionControlProtocolStrategy := &TCP.TCPStrategy{}
-	modelContextProtocolStrategy := &MCP.MCPStrategy{}
 	telnetStrategy := &TELNET.TelnetStrategy{}
 	modbusStrategy := &MODBUS.ModbusStrategy{}
 	s7commStrategy := &S7COMM.S7CommStrategy{}
@@ -158,8 +156,6 @@ Honeypot Framework, happy hacking!`)
 			protocolManager.SetProtocolStrategy(secureShellStrategy)
 		case "tcp":
 			protocolManager.SetProtocolStrategy(transmissionControlProtocolStrategy)
-		case "mcp":
-			protocolManager.SetProtocolStrategy(modelContextProtocolStrategy)
 		case "telnet":
 			protocolManager.SetProtocolStrategy(telnetStrategy)
 		case "modbus":

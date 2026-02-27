@@ -27,8 +27,7 @@
         { "expr": "beelzebub_http_events_total",   "legendFormat": "HTTP" },
         { "expr": "beelzebub_tcp_events_total",    "legendFormat": "TCP" },
         { "expr": "beelzebub_telnet_events_total", "legendFormat": "TELNET" },
-        { "expr": "beelzebub_mcp_events_total",    "legendFormat": "MCP" },
-        { "expr": "beelzebub_modbus_events_total", "legendFormat": "Modbus" },
+{ "expr": "beelzebub_modbus_events_total", "legendFormat": "Modbus" },
         { "expr": "beelzebub_s7comm_events_total", "legendFormat": "S7Comm" },
         { "expr": "beelzebub_iec104_events_total", "legendFormat": "IEC 104" }
       ]
@@ -44,8 +43,7 @@
         { "expr": "rate(beelzebub_http_events_total[1m])",   "legendFormat": "HTTP" },
         { "expr": "rate(beelzebub_tcp_events_total[1m])",    "legendFormat": "TCP" },
         { "expr": "rate(beelzebub_telnet_events_total[1m])", "legendFormat": "TELNET" },
-        { "expr": "rate(beelzebub_mcp_events_total[1m])",    "legendFormat": "MCP" },
-        { "expr": "rate(beelzebub_modbus_events_total[1m])", "legendFormat": "Modbus" },
+{ "expr": "rate(beelzebub_modbus_events_total[1m])", "legendFormat": "Modbus" },
         { "expr": "rate(beelzebub_s7comm_events_total[1m])", "legendFormat": "S7Comm" },
         { "expr": "rate(beelzebub_iec104_events_total[1m])", "legendFormat": "IEC 104" }
       ],

@@ -2,9 +2,12 @@ package SSH
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/term"
 )
+
+var urlRegex = regexp.MustCompile(`https?://[^\s'"` + "`" + `|;&)>]+`)
 
 const samplesDir = "/samples"
 
@@ -99,6 +104,80 @@ func handleSCPUpload(sess ssh.Session, sourceIp, user string, tr tracer.Tracer, 
 	}
 }
 
+// captureWgetCurl checks if a command contains wget/curl and fetches any URLs found in the background.
+func captureWgetCurl(command, sourceIp, user string, tr tracer.Tracer, servConf parser.BeelzebubServiceConfiguration) {
+	lower := strings.ToLower(command)
+	if !strings.Contains(lower, "wget") && !strings.Contains(lower, "curl") {
+		return
+	}
+	urls := urlRegex.FindAllString(command, -1)
+	for _, u := range urls {
+		go fetchAndSaveSample(u, sourceIp, user, tr, servConf)
+	}
+}
+
+func fetchAndSaveSample(rawURL, sourceIp, user string, tr tracer.Tracer, servConf parser.BeelzebubServiceConfiguration) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return
+	}
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		log.Warnf("wget/curl capture: failed to fetch %s: %s", rawURL, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024)) // cap 10 MB
+	if err != nil {
+		log.Warnf("wget/curl capture: failed to read %s: %s", rawURL, err)
+		return
+	}
+
+	filename := filepath.Base(parsed.Path)
+	if filename == "." || filename == "/" || filename == "" {
+		filename = "index"
+	}
+
+	if err := os.MkdirAll(samplesDir, 0750); err != nil {
+		log.Errorf("wget/curl capture: mkdir failed: %s", err)
+		return
+	}
+
+	timestamp := time.Now().UTC().Format("20060102T150405Z")
+	savePath := filepath.Join(samplesDir, fmt.Sprintf("%s_%s_%s", timestamp, sourceIp, filename))
+
+	if err := os.WriteFile(savePath, data, 0600); err != nil {
+		log.Errorf("wget/curl capture: save failed %s: %s", savePath, err)
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"url":      rawURL,
+		"size":     len(data),
+		"sourceIp": sourceIp,
+		"path":     savePath,
+	}).Warn("wget/curl sample captured")
+
+	tr.TraceEvent(tracer.Event{
+		Msg:         "wget/curl — Sample Captured",
+		Protocol:    tracer.SSH.String(),
+		Status:      tracer.Stateless.String(),
+		SourceIp:    sourceIp,
+		User:        user,
+		Command:     fmt.Sprintf("fetch %s (%d bytes)", rawURL, len(data)),
+		Description: servConf.Description,
+	})
+}
+
 type SSHStrategy struct {
 	Sessions *historystore.HistoryStore
 }
@@ -150,6 +229,8 @@ func (sshStrategy *SSHStrategy) Init(servConf parser.BeelzebubServiceConfigurati
 								}
 							}
 							var newEntries []plugins.Message
+							captureWgetCurl(sess.RawCommand(), host, sess.User(), tr, servConf)
+
 							newEntries = append(newEntries, plugins.Message{Role: plugins.USER.String(), Content: sess.RawCommand()})
 							newEntries = append(newEntries, plugins.Message{Role: plugins.ASSISTANT.String(), Content: commandOutput})
 							// Append the new entries to the store.
@@ -220,6 +301,8 @@ func (sshStrategy *SSHStrategy) Init(servConf parser.BeelzebubServiceConfigurati
 									commandOutput = "command not found"
 								}
 							}
+							captureWgetCurl(commandInput, host, sess.User(), tr, servConf)
+
 							var newEntries []plugins.Message
 							newEntries = append(newEntries, plugins.Message{Role: plugins.USER.String(), Content: commandInput})
 							newEntries = append(newEntries, plugins.Message{Role: plugins.ASSISTANT.String(), Content: commandOutput})

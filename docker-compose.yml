@@ -24,6 +24,8 @@ services:
       driver: json-file
       options:
         tag: "beelzebub"
+        max-size: "50m"
+        max-file: "10"
 
   prometheus:
     image: prom/prometheus:v3.2.1

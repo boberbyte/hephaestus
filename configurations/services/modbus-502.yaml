@@ -8,4 +8,4 @@ banner: "1"
 deadlineTimeoutSeconds: 30
 plugin:
   llmProvider: "anthropic"
-  llmModel: "claude-3-haiku-20240307"
+  llmModel: "claude-haiku-4-5-20251001"

@@ -410,10 +410,18 @@ func (llmHoneypot *LLMHoneypot) anthropicCaller(messages []Message) (string, err
 	}
 	log.Debug(response)
 
-	result := response.Result().(*anthropicResponse)
-	if result.Error != nil {
-		return "", fmt.Errorf("anthropic API error (%s): %s", result.Error.Type, result.Error.Message)
+	// For non-2xx responses resty does not populate SetResult, so parse body manually
+	if response.StatusCode() >= 300 {
+		var apiErr struct {
+			Error *anthropicError `json:"error"`
+		}
+		if jsonErr := json.Unmarshal(response.Body(), &apiErr); jsonErr == nil && apiErr.Error != nil {
+			return "", fmt.Errorf("anthropic API error (HTTP %d, %s): %s", response.StatusCode(), apiErr.Error.Type, apiErr.Error.Message)
+		}
+		return "", fmt.Errorf("anthropic API error (HTTP %d): %s", response.StatusCode(), string(response.Body()))
 	}
+
+	result := response.Result().(*anthropicResponse)
 	if len(result.Content) == 0 {
 		return "", fmt.Errorf("no content in anthropic response (HTTP %d)", response.StatusCode())
 	}

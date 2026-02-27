@@ -23,6 +23,9 @@ const (
 	LLMPluginName                       = "LLMHoneypot"
 	openAIEndpoint                      = "https://api.openai.com/v1/chat/completions"
 	ollamaEndpoint                      = "http://localhost:11434/api/chat"
+	anthropicEndpoint                   = "https://api.anthropic.com/v1/messages"
+	anthropicVersion                    = "2023-06-01"
+	anthropicMaxTokens                  = 1024
 )
 
 type LLMHoneypot struct {
@@ -66,6 +69,23 @@ type Request struct {
 	Stream   bool      `json:"stream"`
 }
 
+// Anthropic-specific types
+type anthropicRequest struct {
+	Model     string    `json:"model"`
+	MaxTokens int       `json:"max_tokens"`
+	System    string    `json:"system,omitempty"`
+	Messages  []Message `json:"messages"`
+}
+
+type anthropicContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type anthropicResponse struct {
+	Content []anthropicContent `json:"content"`
+}
+
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -88,6 +108,7 @@ type LLMProvider int
 const (
 	Ollama LLMProvider = iota
 	OpenAI
+	Anthropic
 )
 
 func FromStringToLLMProvider(llmProvider string) (LLMProvider, error) {
@@ -96,8 +117,10 @@ func FromStringToLLMProvider(llmProvider string) (LLMProvider, error) {
 		return Ollama, nil
 	case "openai":
 		return OpenAI, nil
+	case "anthropic":
+		return Anthropic, nil
 	default:
-		return -1, fmt.Errorf("provider %s not found, valid providers: ollama, openai", llmProvider)
+		return -1, fmt.Errorf("provider %s not found, valid providers: ollama, openai, anthropic", llmProvider)
 	}
 }
 
@@ -314,6 +337,61 @@ func (llmHoneypot *LLMHoneypot) ollamaCaller(messages []Message) (string, error)
 	return removeQuotes(response.Result().(*Response).Message.Content), nil
 }
 
+func (llmHoneypot *LLMHoneypot) anthropicCaller(messages []Message) (string, error) {
+	if llmHoneypot.OpenAIKey == "" {
+		return "", errors.New("anthropic API key is empty")
+	}
+
+	host := llmHoneypot.Host
+	if host == "" {
+		host = anthropicEndpoint
+	}
+
+	// Anthropic separates the system prompt from the conversation messages
+	var system string
+	var conversation []Message
+	for _, m := range messages {
+		if m.Role == SYSTEM.String() {
+			system = m.Content
+		} else {
+			conversation = append(conversation, m)
+		}
+	}
+
+	reqBody := anthropicRequest{
+		Model:     llmHoneypot.Model,
+		MaxTokens: anthropicMaxTokens,
+		System:    system,
+		Messages:  conversation,
+	}
+
+	requestJSON, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", err
+	}
+
+	log.Debug(string(requestJSON))
+	response, err := llmHoneypot.client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("x-api-key", llmHoneypot.OpenAIKey).
+		SetHeader("anthropic-version", anthropicVersion).
+		SetBody(requestJSON).
+		SetResult(&anthropicResponse{}).
+		Post(host)
+
+	if err != nil {
+		return "", err
+	}
+	log.Debug(response)
+
+	result := response.Result().(*anthropicResponse)
+	if len(result.Content) == 0 {
+		return "", errors.New("no content in anthropic response")
+	}
+
+	return removeQuotes(result.Content[0].Text), nil
+}
+
 // Calls the LLM provider to execute the model with guardrails as configured
 func (llmHoneypot *LLMHoneypot) ExecuteModel(command string) (string, error) {
 	var err error
@@ -373,8 +451,10 @@ func (llmHoneypot *LLMHoneypot) executeModel(prompt []Message) (string, error) {
 		return llmHoneypot.ollamaCaller(prompt)
 	case OpenAI:
 		return llmHoneypot.openAICaller(prompt)
+	case Anthropic:
+		return llmHoneypot.anthropicCaller(prompt)
 	default:
-		return "", fmt.Errorf("provider %d not found, valid providers: ollama, openai", llmHoneypot.Provider)
+		return "", fmt.Errorf("provider %d not found, valid providers: ollama, openai, anthropic", llmHoneypot.Provider)
 	}
 }
 

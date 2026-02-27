@@ -15,6 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mariocandela/beelzebub/v3/parser"
+	"github.com/mariocandela/beelzebub/v3/plugins"
 	"github.com/mariocandela/beelzebub/v3/tracer"
 )
 
@@ -62,6 +63,19 @@ func (m *ModbusStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 	// Build register override map from commands: regex="FC03:0-9" handler="0064 00C8" (hex words)
 	registerOverrides := parseRegisterOverrides(servConf.Commands)
 
+	// Build LLM honeypot if plugin is configured
+	var llm *plugins.LLMHoneypot
+	if servConf.Plugin.LLMProvider != "" {
+		provider, err := plugins.FromStringToLLMProvider(servConf.Plugin.LLMProvider)
+		if err != nil {
+			log.Warnf("Modbus LLM provider error: %s", err)
+		} else {
+			h := plugins.BuildHoneypot(nil, tracer.MODBUS, provider, servConf)
+			llm = plugins.InitLLMHoneypot(*h)
+			log.Infof("Modbus LLM enabled: provider=%s model=%s", servConf.Plugin.LLMProvider, servConf.Plugin.LLMModel)
+		}
+	}
+
 	go func() {
 		defer listener.Close()
 		for {
@@ -70,7 +84,7 @@ func (m *ModbusStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 				log.Errorf("Error accepting Modbus connection: %s", err.Error())
 				continue
 			}
-			go handleModbusConnection(conn, servConf, tr, slaveID, registerOverrides)
+			go handleModbusConnection(conn, servConf, tr, slaveID, registerOverrides, llm)
 		}
 	}()
 
@@ -81,7 +95,7 @@ func (m *ModbusStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 	return nil
 }
 
-func handleModbusConnection(conn net.Conn, servConf parser.BeelzebubServiceConfiguration, tr tracer.Tracer, slaveID byte, overrides map[string][]byte) {
+func handleModbusConnection(conn net.Conn, servConf parser.BeelzebubServiceConfiguration, tr tracer.Tracer, slaveID byte, overrides map[string][]byte, llm *plugins.LLMHoneypot) {
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(time.Duration(servConf.DeadlineTimeoutSeconds) * time.Second))
 
@@ -122,7 +136,7 @@ func handleModbusConnection(conn net.Conn, servConf parser.BeelzebubServiceConfi
 		}
 
 		// Build response PDU
-		responsePDU := buildResponse(fc, startAddr, quantity, unitID, slaveID, servConf, overrides)
+		responsePDU := buildResponse(fc, startAddr, quantity, unitID, slaveID, servConf, overrides, llm)
 
 		// Build response MBAP (6 bytes) + unitID (1 byte) + PDU
 		resp := make([]byte, 7+len(responsePDU))
@@ -151,7 +165,7 @@ func handleModbusConnection(conn net.Conn, servConf parser.BeelzebubServiceConfi
 	}
 }
 
-func buildResponse(fc byte, startAddr, quantity uint16, unitID, slaveID byte, servConf parser.BeelzebubServiceConfiguration, overrides map[string][]byte) []byte {
+func buildResponse(fc byte, startAddr, quantity uint16, unitID, slaveID byte, servConf parser.BeelzebubServiceConfiguration, overrides map[string][]byte, llm *plugins.LLMHoneypot) []byte {
 	switch fc {
 	case fcReadCoils, fcReadDiscreteInputs:
 		byteCount := byte(math.Ceil(float64(quantity) / 8.0))
@@ -163,11 +177,23 @@ func buildResponse(fc byte, startAddr, quantity uint16, unitID, slaveID byte, se
 	case fcReadHoldingRegisters, fcReadInputRegisters:
 		byteCount := quantity * 2
 		data := make([]byte, byteCount)
-		// Apply overrides if present
-		overrideKey := fmt.Sprintf("FC%02X:%d-%d", fc, startAddr, startAddr+quantity-1)
-		if overrideData, ok := overrides[overrideKey]; ok && len(overrideData) <= int(byteCount) {
-			copy(data, overrideData)
+
+		if llm != nil {
+			cmd := fmt.Sprintf("Read %d registers from address %d in a %s (%s). Respond with exactly %d space-separated decimal integers (0-65535).",
+				quantity, startAddr, servConf.ServerName, servConf.Description, quantity)
+			if response, err := llm.ExecuteModel(cmd); err == nil {
+				data = parseRegisterIntegers(response, quantity)
+			} else {
+				log.Debugf("Modbus LLM error: %s", err)
+			}
+		} else {
+			// Apply static overrides if no LLM
+			overrideKey := fmt.Sprintf("FC%02X:%d-%d", fc, startAddr, startAddr+quantity-1)
+			if overrideData, ok := overrides[overrideKey]; ok && len(overrideData) <= int(byteCount) {
+				copy(data, overrideData)
+			}
 		}
+
 		resp := make([]byte, 2+byteCount)
 		resp[0] = fc
 		resp[1] = byte(byteCount)
@@ -219,6 +245,20 @@ func buildResponse(fc byte, startAddr, quantity uint16, unitID, slaveID byte, se
 		// Exception response
 		return []byte{fc | 0x80, exceptionIllegalFunction}
 	}
+}
+
+// parseRegisterIntegers parses LLM output of space-separated decimals into Modbus register bytes
+func parseRegisterIntegers(s string, count uint16) []byte {
+	data := make([]byte, count*2)
+	fields := strings.Fields(strings.TrimSpace(s))
+	for i := 0; i < int(count) && i < len(fields); i++ {
+		v, err := strconv.ParseUint(fields[i], 10, 16)
+		if err != nil {
+			continue
+		}
+		binary.BigEndian.PutUint16(data[i*2:i*2+2], uint16(v))
+	}
+	return data
 }
 
 // parseRegisterOverrides parses commands with regex="FC03:0-9" handler="0064 00C8" (hex words separated by space)

@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mariocandela/beelzebub/v3/parser"
+	"github.com/mariocandela/beelzebub/v3/plugins"
 	"github.com/mariocandela/beelzebub/v3/tracer"
 )
 
@@ -51,6 +53,19 @@ func (s *S7CommStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 		return err
 	}
 
+	// Build LLM honeypot if plugin is configured
+	var llm *plugins.LLMHoneypot
+	if servConf.Plugin.LLMProvider != "" {
+		provider, err := plugins.FromStringToLLMProvider(servConf.Plugin.LLMProvider)
+		if err != nil {
+			log.Warnf("S7Comm LLM provider error: %s", err)
+		} else {
+			h := plugins.BuildHoneypot(nil, tracer.S7COMM, provider, servConf)
+			llm = plugins.InitLLMHoneypot(*h)
+			log.Infof("S7Comm LLM enabled: provider=%s model=%s", servConf.Plugin.LLMProvider, servConf.Plugin.LLMModel)
+		}
+	}
+
 	go func() {
 		defer listener.Close()
 		for {
@@ -59,7 +74,7 @@ func (s *S7CommStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 				log.Errorf("Error accepting S7Comm connection: %s", err.Error())
 				continue
 			}
-			go handleS7CommConnection(conn, servConf, tr)
+			go handleS7CommConnection(conn, servConf, tr, llm)
 		}
 	}()
 
@@ -70,7 +85,7 @@ func (s *S7CommStrategy) Init(servConf parser.BeelzebubServiceConfiguration, tr 
 	return nil
 }
 
-func handleS7CommConnection(conn net.Conn, servConf parser.BeelzebubServiceConfiguration, tr tracer.Tracer) {
+func handleS7CommConnection(conn net.Conn, servConf parser.BeelzebubServiceConfiguration, tr tracer.Tracer, llm *plugins.LLMHoneypot) {
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(time.Duration(servConf.DeadlineTimeoutSeconds) * time.Second))
 
@@ -107,7 +122,7 @@ func handleS7CommConnection(conn net.Conn, servConf parser.BeelzebubServiceConfi
 			break
 		}
 
-		resp, err := buildS7Response(tpkt, pduType, paramCode, szlID, servConf)
+		resp, err := buildS7Response(tpkt, pduType, paramCode, szlID, servConf, llm)
 		if err != nil {
 			log.Debugf("S7Comm build response error: %s", err.Error())
 			break
@@ -236,7 +251,7 @@ func parseS7PDU(payload []byte) (pduType byte, paramCode uint16, szlID uint16, e
 }
 
 // buildS7Response constructs the appropriate TPKT+COTP+S7 response
-func buildS7Response(reqPayload []byte, pduType byte, paramCode uint16, szlID uint16, servConf parser.BeelzebubServiceConfiguration) ([]byte, error) {
+func buildS7Response(reqPayload []byte, pduType byte, paramCode uint16, szlID uint16, servConf parser.BeelzebubServiceConfiguration, llm *plugins.LLMHoneypot) ([]byte, error) {
 	// Extract PDU reference from request S7 header
 	s7Data := reqPayload[3:] // skip COTP DT (3 bytes)
 	var pduRef uint16
@@ -258,7 +273,7 @@ func buildS7Response(reqPayload []byte, pduType byte, paramCode uint16, szlID ui
 
 	case s7TypeUserData:
 		// SZL read request
-		s7Resp = buildSZLResponse(pduRef, szlID, servConf)
+		s7Resp = buildSZLResponse(pduRef, szlID, servConf, llm)
 
 	default:
 		// Return minimal ACK
@@ -307,13 +322,23 @@ func buildGenericAckData(pduRef uint16, paramCode byte) []byte {
 }
 
 // buildSZLResponse builds an S7 UserData response for SZL reads
-func buildSZLResponse(pduRef uint16, szlID uint16, servConf parser.BeelzebubServiceConfiguration) []byte {
+func buildSZLResponse(pduRef uint16, szlID uint16, servConf parser.BeelzebubServiceConfiguration, llm *plugins.LLMHoneypot) []byte {
 	var szlData []byte
 
 	switch szlID {
 	case szlModuleIdentification:
-		// Module identification: return serverName
 		name := servConf.ServerName
+		if llm != nil {
+			cmd := fmt.Sprintf("Generate a Siemens S7 PLC module order number for a %s (%s). Return only the order number string, max 20 chars.", servConf.ServerName, servConf.Description)
+			if resp, err := llm.ExecuteModel(cmd); err == nil && resp != "" {
+				name = strings.TrimSpace(resp)
+				if len(name) > 20 {
+					name = name[:20]
+				}
+			} else {
+				log.Debugf("S7Comm LLM error: %s", err)
+			}
+		}
 		if name == "" {
 			name = "6ES7 000-0AA00-0AA0"
 		}

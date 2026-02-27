@@ -1,8 +1,11 @@
 apiVersion: "v1"
 protocol: "modbus"
 address: ":502"
-description: "Siemens S7-1200 Modbus Server"
-serverName: "Siemens"
+description: "water treatment plant"
+serverName: "Siemens S7-1200"
 serverVersion: "V4.4"
 banner: "1"
 deadlineTimeoutSeconds: 30
+plugin:
+  llmProvider: "anthropic"
+  llmModel: "claude-3-haiku-20240307"

@@ -35,4 +35,3 @@ scrape_configs:
       - labels:
           protocol:
           status:
-          msg:

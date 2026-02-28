@@ -45,9 +45,15 @@ services:
     restart: always
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     volumes:
       - loki-data:/loki
+      - ./monitoring/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 800M
 
   promtail:
     image: grafana/promtail:3.4.2

@@ -1,22 +1,42 @@
 apiVersion: "v1"
 protocol: "http"
 address: ":80"
-description: "Wordpress 6.0"
+description: "ABB MicroSCADA Pro web HMI — Ludvika substation"
 commands:
-  - regex: "^(/index.php|/index.html|/)$"
-    handler:
+  - regex: "^(/|/index.html|/index.htm|/login|/login.html)$"
+    handler: |
+      <!DOCTYPE html>
       <html>
-        <header>
-          <title>Wordpress 6 test page</title>
-        </header>
-        <body>
-          <h1>Hello from Wordpress</h1>
-        </body>
+      <head>
+        <title>ABB MicroSCADA Pro SYS600 - Ludvika 400kV</title>
+        <meta charset="UTF-8">
+      </head>
+      <body bgcolor="#1a1a2e">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr bgcolor="#003366">
+            <td><img src="/images/abb_logo.gif" height="40"></td>
+            <td><font color="white" size="4"><b>ABB MicroSCADA Pro SYS 600</b></font></td>
+            <td align="right"><font color="#aaaaaa" size="2">Ludvika 400kV Substation &nbsp;|&nbsp; Svenska kraftnät</font></td>
+          </tr>
+        </table>
+        <br>
+        <center>
+        <form method="POST" action="/login">
+          <table bgcolor="#2a2a4a" cellpadding="8" border="1" bordercolor="#444">
+            <tr><td colspan="2" align="center"><font color="#00aaff" size="3"><b>Operator Login</b></font></td></tr>
+            <tr><td><font color="white">Username:</font></td><td><input type="text" name="user" size="20"></td></tr>
+            <tr><td><font color="white">Password:</font></td><td><input type="password" name="pass" size="20"></td></tr>
+            <tr><td colspan="2" align="center"><input type="submit" value="Login" bgcolor="#003366"></td></tr>
+          </table>
+        </form>
+        <br><font color="#666666" size="1">MicroSCADA Pro SYS 600 9.4.0 &copy; ABB AB &nbsp;|&nbsp; Unauthorized access is prohibited</font>
+        </center>
+      </body>
       </html>
     headers:
       - "Content-Type: text/html"
-      - "Server: Apache/2.4.53 (Debian)"
-      - "X-Powered-By: PHP/7.4.29"
+      - "Server: Apache/2.2.15 (Red Hat)"
+      - "X-Powered-By: MicroSCADA/9.4"
     statusCode: 200
   - regex: "^.*$"
     plugin: "LLMHoneypot"

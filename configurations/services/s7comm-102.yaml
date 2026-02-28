@@ -1,10 +1,10 @@
 apiVersion: "v1"
 protocol: "s7comm"
 address: ":102"
-description: "power substation automation"
-serverName: "6ES7 315-2EH14-0AB0"
-serverVersion: "V3.3.13"
-banner: "S7300-01"
+description: "Siemens SICAM A8000 — Stenby 130kV substation, E.ON Energidistribution Sverige"
+serverName: "6MF1840-2AA10-0AA0"
+serverVersion: "V8.03"
+banner: "SICAM-STENBY-01"
 deadlineTimeoutSeconds: 60
 plugin:
   llmProvider: "anthropic"

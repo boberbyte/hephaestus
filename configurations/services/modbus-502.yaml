@@ -1,10 +1,10 @@
 apiVersion: "v1"
 protocol: "modbus"
 address: ":502"
-description: "water treatment pump station. Register map with realistic ranges: 0=flow L/min*10 (800-1500), 1=inlet pressure mbar (800-1200), 2=outlet pressure mbar (3000-5000), 3=water temperature 0.1C (80-250 meaning 8-25C), 4=pump speed RPM (1400-1500), 5=pump current 0.1A (150-250 meaning 15-25A), 6=chlorine level ug/L (200-800), 7=pH value 0.01 (680-730 meaning 6.8-7.3), 8=turbidity NTU*10 (5-50), 9=tank level mm (2000-4000)"
-serverName: "Siemens S7-1200"
-serverVersion: "V4.4"
-banner: "1"
+description: "Ludvika 130kV substation power meter — Vattenfall Eldistribution. Register map: 0=voltage L1 kV*100 (12950-13050 meaning 129.5-130.5kV), 1=active power MW*10 (2400-2600 meaning 240-260MW), 2=reactive power MVAR*10 (-500-500), 3=frequency Hz*100 (4998-5002 meaning 49.98-50.02Hz), 4=current A (1050-1150), 5=transformer temp C (45-75), 6=busbar voltage kV*100 (12900-13100), 7=CB status 0=open 1=closed (0 or 1), 8=active alarms count (0-3), 9=power factor *1000 (950-1000 meaning 0.95-1.00)"
+serverName: "ABB RTU500"
+serverVersion: "12.4.1"
+banner: "47"
 deadlineTimeoutSeconds: 30
 plugin:
   llmProvider: "anthropic"

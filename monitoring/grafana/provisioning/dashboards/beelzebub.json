@@ -27,7 +27,7 @@
         { "expr": "beelzebub_http_events_total",   "legendFormat": "HTTP" },
         { "expr": "beelzebub_tcp_events_total",    "legendFormat": "TCP" },
         { "expr": "beelzebub_telnet_events_total", "legendFormat": "TELNET" },
-{ "expr": "beelzebub_modbus_events_total", "legendFormat": "Modbus" },
+        { "expr": "beelzebub_modbus_events_total", "legendFormat": "Modbus" },
         { "expr": "beelzebub_s7comm_events_total", "legendFormat": "S7Comm" },
         { "expr": "beelzebub_iec104_events_total", "legendFormat": "IEC 104" }
       ]
@@ -43,7 +43,7 @@
         { "expr": "rate(beelzebub_http_events_total[1m])",   "legendFormat": "HTTP" },
         { "expr": "rate(beelzebub_tcp_events_total[1m])",    "legendFormat": "TCP" },
         { "expr": "rate(beelzebub_telnet_events_total[1m])", "legendFormat": "TELNET" },
-{ "expr": "rate(beelzebub_modbus_events_total[1m])", "legendFormat": "Modbus" },
+        { "expr": "rate(beelzebub_modbus_events_total[1m])", "legendFormat": "Modbus" },
         { "expr": "rate(beelzebub_s7comm_events_total[1m])", "legendFormat": "S7Comm" },
         { "expr": "rate(beelzebub_iec104_events_total[1m])", "legendFormat": "IEC 104" }
       ],
@@ -53,131 +53,113 @@
       "id": 7,
       "title": "Login Attempts (SSH / TELNET)",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
       "datasource": "Loki",
-      "targets": [{
-        "expr": "{container=\"/beelzebub\"} |= \"Login Attempt\"",
-        "legendFormat": ""
-      }],
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      }
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |= \"Login Attempt\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
     },
     {
       "id": 8,
-      "title": "Commands Executed",
+      "title": "SSH Commands Executed",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
       "datasource": "Loki",
-      "targets": [{
-        "expr": "{container=\"/beelzebub\"} |= \"Interaction\"",
-        "legendFormat": ""
-      }],
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      }
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |= \"Interaction\" |= \"SSH\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 12,
+      "title": "Malware Samples Captured (SCP / wget / curl)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 6 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |~ \"Sample Captured|scp|wget|curl\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 13,
+      "title": "Modbus — Function Codes & Source IPs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |= \"MODBUS\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 14,
+      "title": "S7Comm — PDU Types & SZL Queries",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |= \"S7COMM\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 15,
+      "title": "IEC 104 — ASDU Commands",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 44, "w": 12, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |= \"IEC104\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
+    },
+    {
+      "id": 16,
+      "title": "OT Scanning IPs",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 44, "w": 12, "h": 10 },
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=\"/beelzebub\"} |~ \"MODBUS|S7COMM|IEC104\"", "legendFormat": "" }],
+      "options": { "dedupStrategy": "signature", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending" }
     },
     {
       "id": 10,
       "title": "Attackers World Map",
       "type": "geomap",
-      "gridPos": { "x": 0, "y": 32, "w": 24, "h": 12 },
+      "gridPos": { "x": 0, "y": 54, "w": 24, "h": 12 },
       "datasource": "Loki",
-      "targets": [{
-        "expr": "{container=\"/beelzebub\"} | json | sourceIp != ``",
-        "legendFormat": ""
-      }],
+      "targets": [{ "expr": "{container=\"/beelzebub\"} | json | sourceIp != ``", "legendFormat": "" }],
       "options": {
         "view": { "id": "zero", "zoom": 2 },
         "controls": { "showZoom": true, "showAttribution": true },
         "layers": [{
           "type": "markers",
           "name": "Attackers",
-          "config": {
-            "style": {
-              "color": { "fixed": "red" },
-              "opacity": 0.7,
-              "size": { "fixed": 5 }
-            }
-          },
+          "config": { "style": { "color": { "fixed": "red" }, "opacity": 0.7, "size": { "fixed": 5 } } },
           "location": { "mode": "lookup", "lookup": "sourceIp", "gazetteer": "public/gazetteer/countries.json" }
         }]
       },
-      "transformations": [
-        { "id": "extractFields", "options": { "source": "labels" } }
-      ]
+      "transformations": [{ "id": "extractFields", "options": { "source": "labels" } }]
     },
     {
       "id": 9,
       "title": "Source IPs",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 44, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 66, "w": 12, "h": 8 },
       "datasource": "Loki",
-      "targets": [{
-        "expr": "{container=\"/beelzebub\"} | json | json event | event_SourceIp != ``",
-        "legendFormat": ""
-      }],
-      "options": {
-        "dedupStrategy": "signature",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showTime": true,
-        "sortOrder": "Descending"
-      }
+      "targets": [{ "expr": "{container=\"/beelzebub\"} | json | json event | event_SourceIp != ``", "legendFormat": "" }],
+      "options": { "dedupStrategy": "signature", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending" }
     },
     {
       "id": 4,
       "title": "Live Logs (alla protokoll)",
       "type": "logs",
-      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 66, "w": 12, "h": 8 },
       "datasource": "Loki",
       "targets": [{ "expr": "{container=\"/beelzebub\"}", "legendFormat": "" }],
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      }
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false }
     },
     {
       "id": 11,
       "title": "OT Historian — Events Rate (InfluxDB)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 50, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 74, "w": 24, "h": 8 },
       "datasource": "InfluxDB-Historian",
       "targets": [{
         "refId": "A",
         "query": "from(bucket: \"process-data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] =~ /beelzebub/)\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\")\n  |> derivative(unit: 1m, nonNegative: true)\n  |> yield(name: \"rate\")"
       }],
       "options": { "tooltip": { "mode": "multi" } }
-    },
-    {
-      "id": 5,
-      "title": "OT Protocol Events (Modbus / S7Comm / IEC 104)",
-      "type": "logs",
-      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 10 },
-      "datasource": "Loki",
-      "targets": [{ "expr": "{container=\"/beelzebub\"} |~ `MODBUS|S7COMM|IEC104`", "legendFormat": "" }],
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      }
     }
   ],
   "time": { "from": "now-6h", "to": "now" }

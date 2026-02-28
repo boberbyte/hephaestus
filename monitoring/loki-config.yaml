@@ -54,9 +54,6 @@ compactor:
   working_directory: /loki/compactor
   # Run compaction less often to reduce CPU spikes
   compaction_interval: 10m
-  retention_enabled: true
-  retention_delete_delay: 2h
-  retention_delete_worker_count: 50
 
 chunk_store_config:
   chunk_cache_config:
@@ -64,7 +61,3 @@ chunk_store_config:
       enabled: true
       max_size_mb: 128
 
-table_manager:
-  retention_deletes_enabled: true
-  # Keep logs for 30 days
-  retention_period: 720h

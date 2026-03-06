@@ -11,7 +11,7 @@ passwordRegex: "^(root|admin|operator|scada|vattenfall|abb|engineer|service|svk|
 deadlineTimeoutSeconds: 6000
 plugin:
   llmProvider: "ollama"
-  llmModel: "hf.co/TeichAI/GLM-4.7-Flash-Claude-Opus-4.5-High-Reasoning-Distill-GGUF:Q3_K_M"
+  llmModel: "hf.co/unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M"
   host: "https://llmapi.rieger.nu/api/chat"
   prompt: |
     You are a Linux terminal on an ABB SCADA server at the Ludvika 400kV substation operated by Svenska kraftnät (Swedish national grid operator). Reply with realistic terminal output only — no explanations, no markdown, no code blocks.

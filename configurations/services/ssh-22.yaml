@@ -3,6 +3,123 @@ protocol: "ssh"
 address: ":22"
 description: "ABB SCADA SSH — Ludvika 400kV substation"
 commands:
+  # --- Canned responses: no GPU needed ---
+
+  # GPU tools — not present on SCADA server
+  - regex: "^nvidia-smi"
+    handler: "bash: nvidia-smi: command not found"
+  - regex: "^nvcc"
+    handler: "bash: nvcc: command not found"
+
+  # PCI devices — Intel Xeon E3-1225 v5 workstation/server board
+  - regex: "^lspci"
+    handler: |
+      00:00.0 Host bridge: Intel Corporation Xeon E3-1200 v5/E3-1500 v5/6th Gen Core Processor Host Bridge/DRAM Registers (rev 07)
+      00:02.0 Display controller: Intel Corporation HD Graphics P530 (rev 06)
+      00:14.0 USB controller: Intel Corporation 100 Series/C230 Series Chipset Family USB 3.0 xHCI Controller (rev 31)
+      00:16.0 Communication controller: Intel Corporation 100 Series/C230 Series Chipset Family MEI Controller #1 (rev 31)
+      00:17.0 SATA controller: Intel Corporation Q170/Q150/B150 Chipset Family SATA Controller [AHCI Mode] (rev 31)
+      00:1c.0 PCI bridge: Intel Corporation 100 Series/C230 Series Chipset Family PCI Express Root Port #1 (rev f1)
+      00:1f.0 ISA bridge: Intel Corporation C236 Chipset LPC/eSPI Controller (rev 31)
+      00:1f.2 Memory controller: Intel Corporation 100 Series/C230 Series Chipset Family Power Management Controller (rev 31)
+      00:1f.4 SMBus: Intel Corporation 100 Series/C230 Series Chipset Family SMBus (rev 31)
+      01:00.0 Ethernet controller: Intel Corporation I210 Gigabit Network Connection (rev 03)
+      02:00.0 Ethernet controller: Intel Corporation I210 Gigabit Network Connection (rev 03)
+
+  # Kernel / OS identity
+  - regex: "^uname$"
+    handler: "Linux"
+  - regex: "^uname -s$"
+    handler: "Linux"
+  - regex: "^uname -n$"
+    handler: "rtu-ludvika-400kv"
+  - regex: "^uname -r$"
+    handler: "3.10.0-1160.el7.x86_64"
+  - regex: "^uname -m$"
+    handler: "x86_64"
+  - regex: "^uname -a$"
+    handler: "Linux rtu-ludvika-400kv 3.10.0-1160.el7.x86_64 #1 SMP Mon Oct 19 16:18:59 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux"
+  - regex: "^hostname$"
+    handler: "rtu-ludvika-400kv"
+  - regex: "^cat /etc/redhat-release$"
+    handler: "Red Hat Enterprise Linux Server release 7.9 (Maipo)"
+  - regex: "^cat /etc/os-release$"
+    handler: |
+      NAME="Red Hat Enterprise Linux Server"
+      VERSION="7.9 (Maipo)"
+      ID="rhel"
+      ID_LIKE="fedora"
+      VARIANT="Server"
+      VARIANT_ID="server"
+      VERSION_ID="7.9"
+      PRETTY_NAME="Red Hat Enterprise Linux Server 7.9 (Maipo)"
+      ANSI_COLOR="0;31"
+      CPE_NAME="cpe:/o:redhat:enterprise_linux:7.9:GA:server"
+      HOME_URL="https://www.redhat.com/"
+      BUG_REPORT_URL="https://bugzilla.redhat.com/"
+      REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 7"
+      REDHAT_BUGZILLA_PRODUCT_VERSION=7.9
+      REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+      REDHAT_SUPPORT_PRODUCT_VERSION="7.9"
+
+  # Memory / disk
+  - regex: "^free -m$"
+    handler: "             total        used        free      shared  buff/cache   available\nMem:         15987        4821        8234         312        2931       10521\nSwap:         8191         128        8063"
+  - regex: "^free( -b|-k|-g|--si|-h)?$"
+    handler: "             total        used        free      shared  buff/cache   available\nMem:      16370936     4937244     8432612      319652     3000080    10770252\nSwap:      8388604      131072     8257532"
+  - regex: "^df -h$"
+    handler: |
+      Filesystem            Size  Used Avail Use% Mounted on
+      /dev/sda1              50G   12G   35G  26% /
+      devtmpfs              7.8G     0  7.8G   0% /dev
+      tmpfs                 7.8G     0  7.8G   0% /dev/shm
+      tmpfs                 7.8G  8.5M  7.8G   1% /run
+      /dev/sdb1             440G  180G  238G  44% /opt
+      tmpfs                 1.6G     0  1.6G   0% /run/user/1001
+
+  # Who is logged in / load
+  - regex: "^w$"
+    handler: " 08:14:17 up 47 days, 12:33,  1 user,  load average: 0.02, 0.02, 0.00\nUSER     TTY      FROM             LOGIN@   IDLE JCPU   PCPU WHAT\nscada    pts/0    10.47.12.50      08:11    0.00s  0.02s  0.00s w"
+  - regex: "^who$"
+    handler: "scada    pts/0        2024-10-21 08:11 (10.47.12.50)"
+  - regex: "^uptime$"
+    handler: " 08:14:17 up 47 days, 12:33,  1 user,  load average: 0.02, 0.02, 0.00"
+  - regex: "^last( -[a-zA-Z0-9]+)*$"
+    handler: |
+      scada    pts/0        10.47.12.50      Mon Oct 21 08:11   still logged in
+      scada    pts/0        10.47.12.50      Fri Oct 18 14:22 - 17:05  (02:42)
+      reboot   system boot  3.10.0-1160.el7  Thu Sep  5 19:41 - 08:14 (47+12:33)
+
+  # CPU info
+  - regex: "^nproc$"
+    handler: "4"
+  - regex: "^lscpu$"
+    handler: |
+      Architecture:          x86_64
+      CPU op-mode(s):        32-bit, 64-bit
+      Byte Order:            Little Endian
+      CPU(s):                4
+      On-line CPU(s) list:   0-3
+      Thread(s) per core:    1
+      Core(s) per socket:    4
+      Socket(s):             1
+      NUMA node(s):          1
+      Vendor ID:             GenuineIntel
+      CPU family:            6
+      Model:                 94
+      Model name:            Intel(R) Xeon(R) CPU E3-1225 v5 @ 3.30GHz
+      Stepping:              3
+      CPU MHz:               3300.000
+      CPU max MHz:           3700.0000
+      CPU min MHz:           800.0000
+      BogoMIPS:              6599.83
+      L1d cache:             32K
+      L1i cache:             32K
+      L2 cache:              256K
+      L3 cache:              8192K
+      NUMA node0 CPU(s):     0-3
+
+  # --- LLM fallback for everything else ---
   - regex: "^(.+)$"
     plugin: "LLMHoneypot"
 serverVersion: "OpenSSH_7.4"

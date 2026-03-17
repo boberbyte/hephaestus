@@ -216,30 +216,46 @@ func buildResponse(fc byte, startAddr, quantity uint16, unitID, slaveID byte, se
 		return append([]byte{fc, byte(len(payload))}, payload...)
 
 	case fcMEITransport:
-		// MEI Device Identification (sub-function 0x0E, object 0x00)
-		vendor := servConf.ServerName
-		if vendor == "" {
-			vendor = "Beelzebub"
+		// MEI Read Device Identification (FC=0x2B, MEI type=0x0E)
+		// Split serverName into vendor + product: "ABB RTU500" → "ABB" / "RTU500"
+		serverName := servConf.ServerName
+		if serverName == "" {
+			serverName = "Unknown"
 		}
-		product := servConf.ServerVersion
-		if product == "" {
-			product = "1.0"
+		version := servConf.ServerVersion
+		if version == "" {
+			version = "1.0"
 		}
-		// Build minimal MEI response
+		parts := strings.SplitN(serverName, " ", 2)
+		vendor := parts[0]
+		product := serverName
+		if len(parts) == 2 {
+			product = parts[1]
+		}
+		vendorURL := fmt.Sprintf("www.%s.com", strings.ToLower(vendor))
+
+		// Build objects: id(1) + length(1) + value
+		addObj := func(buf []byte, id byte, val string) []byte {
+			buf = append(buf, id, byte(len(val)))
+			return append(buf, []byte(val)...)
+		}
+		var objects []byte
+		objects = addObj(objects, 0x00, vendor)      // VendorName
+		objects = addObj(objects, 0x01, product)     // ProductCode
+		objects = addObj(objects, 0x02, version)     // MajorMinorRevision
+		objects = addObj(objects, 0x03, vendorURL)   // VendorUrl
+		objects = addObj(objects, 0x04, serverName)  // ProductName
+
 		resp := []byte{
-			fc, 0x0E, // MEI type
-			0x01,       // conformity level: basic
+			fc,
+			0x0E,       // MEI type: Read Device Identification
+			0x01,       // read device ID code (basic stream)
+			0x82,       // conformity level: regular, individual access
 			0x00,       // more follows: no
 			0x00,       // next object id
-			0x03,       // number of objects
-			0x00, byte(len(vendor)),
+			0x05,       // number of objects
 		}
-		resp = append(resp, []byte(vendor)...)
-		resp = append(resp, 0x01, byte(len(product)))
-		resp = append(resp, []byte(product)...)
-		resp = append(resp, 0x02, byte(len(product))) // revision = product version
-		resp = append(resp, []byte(product)...)
-		return resp
+		return append(resp, objects...);
 
 	default:
 		// Exception response

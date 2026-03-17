@@ -124,6 +124,63 @@ When `BeelzebubCloud.Enabled` is true in `beelzebub.yaml`, `Builder.Run()` calls
 
 `builder.go:Run()` creates **one instance per protocol type** (e.g. one `SSHStrategy`). All SSH service configs share that instance — `SSHStrategy.Sessions` is therefore shared across all SSH ports.
 
+## Deployment
+
+Server: `ssh -i ~/.ssh/id_rsa azureuser@20.240.47.97 -p 2022`
+Repo on server: `~/hephaestus/`
+
+```bash
+# Build on server (no local Go)
+ssh -i ~/.ssh/id_rsa azureuser@20.240.47.97 -p 2022 \
+  "docker run --rm -v ~/hephaestus:/workspace -w /workspace golang:1.24 go build -buildvcs=false ./..."
+
+# Restart honeypot
+ssh -i ~/.ssh/id_rsa azureuser@20.240.47.97 -p 2022 \
+  "cd ~/hephaestus && docker compose restart beelzebub"
+
+# Restart full monitoring stack
+ssh -i ~/.ssh/id_rsa azureuser@20.240.47.97 -p 2022 \
+  "cd ~/hephaestus && docker compose restart promtail grafana"
+```
+
+**Note:** Several subdirs on the server lack execute-bits (owned by root or `drw-r--r--`).
+Use `sudo chmod u+X <dir>` before writing, or `sudo mv` via `/tmp` for root-owned files.
+
+## Recent Changes (2026-03-13)
+
+### Modbus — MEI Device Identification (FC=0x2B)
+`protocols/strategies/MODBUS/modbus.go` — improved MEI response:
+- Splits `serverName` into vendor + product (e.g. `"ABB RTU500"` → `ABB` / `RTU500`)
+- Returns 5 objects: VendorName, ProductCode, MajorMinorRevision, VendorUrl, ProductName
+- Conformity level `0x82` (regular, individual access)
+- Much more realistic fingerprint against Shodan/Censys scanners
+
+### IEC-104 — Session End Bug Fix
+`protocols/strategies/IEC104/iec104.go` — session-end TraceEvent now includes
+`RemoteAddr`, `SourceIp`, `SourcePort`, `Description` (previously all empty).
+
+### SSH — Canned Responses (GPU savings)
+`configurations/services/ssh-22.yaml` — static responses added before the LLM catch-all
+for ~20 common recon commands: `nvidia-smi`, `lspci`, `uname`, `hostname`,
+`cat /etc/os-release`, `free`, `df -h`, `w`, `who`, `uptime`, `last`, `nproc`, `lscpu`.
+**YAML gotcha:** multiline handlers with table-formatted output (headers with many spaces)
+must use quoted strings with `\n` instead of `|` block scalars — otherwise the first
+heavily-indented line sets the block's indentation level and the next line breaks parsing.
+
+### Grafana — World Map GeoIP
+`monitoring/promtail-config.yaml` — added `geoip` pipeline stage using GeoLite2-Country.mmdb.
+`docker-compose.yml` — `geoip-init` now downloads `GeoLite2-Country.mmdb` from
+`P3TERX/GeoLite.mmdb` (MaxMind-compatible; DB-IP's format caused "unknown database type").
+`monitoring/grafana/grafana.ini` — db_path updated.
+Dashboard panel `location.lookup` changed from `sourceIp` → `geoip_country_code`.
+
+### Grafana — BoberTech Logo Panel
+`monitoring/grafana/img/bobertech.jpg` — logo mounted into Grafana at
+`/usr/share/grafana/public/img/bobertech.jpg`.
+Dashboard: transparent Text-panel (id=99) in top-right corner with image + text
+"AI Compute / Powered by BoberTech".
+`grafana.ini`: `disable_sanitize_html = true` required for HTML in Text panels.
+
 ## Testing Conventions
 
 - Use `testify/assert` and `testify/require`.

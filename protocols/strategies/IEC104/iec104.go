@@ -298,10 +298,14 @@ func handleIEC104Connection(conn net.Conn, servConf parser.BeelzebubServiceConfi
 	}
 
 	tr.TraceEvent(tracer.Event{
-		Msg:      "IEC104 session end",
-		Protocol: tracer.IEC104.String(),
-		Status:   tracer.End.String(),
-		ID:       id,
+		Msg:         "IEC104 session end",
+		Protocol:    tracer.IEC104.String(),
+		Status:      tracer.End.String(),
+		RemoteAddr:  host + ":" + port,
+		SourceIp:    host,
+		SourcePort:  port,
+		ID:          id,
+		Description: servConf.Description,
 	})
 }
 

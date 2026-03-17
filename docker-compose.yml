@@ -63,9 +63,11 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./monitoring/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - geoip-data:/geoip:ro
     command: -config.file=/etc/promtail/config.yaml
     depends_on:
       - loki
+      - geoip-init
 
   influxdb:
     image: influxdb:2.7
@@ -102,12 +104,10 @@ services:
       - geoip-data:/geoip
     command: >
       sh -c "
-        FILE=/geoip/dbip-country-lite.mmdb;
+        FILE=/geoip/GeoLite2-Country.mmdb;
         if [ ! -f $$FILE ]; then
-          echo 'Downloading DB-IP GeoLite database...';
-          YEAR=$$(date +%Y);
-          MONTH=$$(date +%m);
-          curl -fsSL https://download.db-ip.com/free/dbip-country-lite-$${YEAR}-$${MONTH}.mmdb.gz | gunzip > $$FILE && echo 'GeoIP database ready.' || echo 'Download failed, maps will be empty.';
+          echo 'Downloading GeoLite2-Country database...';
+          curl -fsSL https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb -o $$FILE && echo 'GeoIP database ready.' || echo 'Download failed, maps will be empty.';
         else
           echo 'GeoIP database already present.';
         fi
@@ -128,6 +128,7 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
       - geoip-data:/var/lib/grafana/geoip:ro
+      - ./monitoring/grafana/img/bobertech.jpg:/usr/share/grafana/public/img/bobertech.jpg:ro
     depends_on:
       - loki
       - geoip-init

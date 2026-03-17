@@ -6,6 +6,17 @@
   "schemaVersion": 38,
   "panels": [
     {
+      "id": 99,
+      "title": "",
+      "type": "text",
+      "gridPos": { "x": 14, "y": 0, "w": 10, "h": 10 },
+      "options": {
+        "mode": "markdown",
+        "content": "<div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;height:100%\"><img src=\"/public/img/bobertech.jpg\" style=\"height:182px;border-radius:8px\"/><div style=\"text-align:center;color:#aaa;font-size:17px;line-height:1.5\">AI Compute<br/><strong style=\"color:#fff;font-size:21px\">Powered by BoberTech</strong></div></div>"
+      },
+      "transparent": true
+    },
+    {
       "id": 1,
       "title": "Total Events",
       "type": "stat",
@@ -126,7 +137,7 @@
           "type": "markers",
           "name": "Attackers",
           "config": { "style": { "color": { "fixed": "red" }, "opacity": 0.7, "size": { "fixed": 5 } } },
-          "location": { "mode": "lookup", "lookup": "sourceIp", "gazetteer": "public/gazetteer/countries.json" }
+          "location": { "mode": "lookup", "lookup": "geoip_country_code", "gazetteer": "public/gazetteer/countries.json" }
         }]
       },
       "transformations": [{ "id": "extractFields", "options": { "source": "labels" } }]

@@ -32,6 +32,11 @@ scrape_configs:
             remote_addr: remoteAddr
             command: command
             user: user
+      - geoip:
+          db: /geoip/GeoLite2-Country.mmdb
+          source: source_ip
+          db_type: country
       - labels:
           protocol:
           status:
+          geoip_country_code:
